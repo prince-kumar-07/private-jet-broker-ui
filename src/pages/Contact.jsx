@@ -14,7 +14,7 @@ export function ContactDetails() {
 
 export default function Contact() {
   return (
-    <div className="mx-auto grid max-w-6xl gap-12 px-5 pb-24 pt-32 sm:px-8 sm:pt-40 lg:grid-cols-[1fr_1.2fr]">
+    <div className="mx-auto grid max-w-6xl gap-12 px-5 pb-24 pt-32 sm:px-8 sm:pt-40 md:grid-cols-[1fr_1.2fr]">
       <div>
         <Reveal y={16}><p className="mb-3 text-xs uppercase tracking-[0.35em] text-gold">Get in touch</p></Reveal>
         <h1 className="font-display text-5xl font-semibold sm:text-6xl"><SplitText text="Ask us" immediate delay={0.4} className="block" /><SplitText text="anything." immediate delay={0.55} wordClass="gold-text" className="block" /></h1>

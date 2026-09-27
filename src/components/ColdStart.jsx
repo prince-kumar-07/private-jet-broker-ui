@@ -43,7 +43,7 @@ export default function ColdStart() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.98 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-x-4 bottom-5 z-[90] mx-auto w-auto max-w-md sm:bottom-8"
+          className="fixed inset-x-4 bottom-0 z-[90] mx-auto w-auto max-w-md pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-[calc(2rem+env(safe-area-inset-bottom))]"
         >
           <div className="glass-bar relative overflow-hidden rounded-2xl border border-gold/25 bg-[#0b1220]/85 p-5 backdrop-blur-xl">
             <div aria-hidden="true" className="pointer-events-none absolute -top-16 left-1/2 h-32 w-64 -translate-x-1/2 rounded-full bg-gold/15 blur-3xl" />

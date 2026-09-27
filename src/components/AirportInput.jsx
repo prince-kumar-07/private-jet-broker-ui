@@ -22,7 +22,7 @@ function loadAirports() {
 
 const wordStart = (s, t) => s.split(/[\s(),/.-]+/).some((w) => w.startsWith(t));
 
-function search(all, raw) {
+export function search(all, raw) {
   const t = raw.trim().toLowerCase();
   if (!t) return POPULAR.map((c) => all.find((a) => a.code === c && (a.iso === 'IN' || c.length === 3))).filter(Boolean);
   const scored = [];

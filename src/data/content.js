@@ -48,3 +48,11 @@ export const AIRCRAFT_OPTIONS = [
   { value: '', label: 'No preference' },
   ...FLEET.map((f) => ({ value: f.name, label: f.name })),
 ];
+
+export const EMPTY_LEG_STATUS = {
+  active: { label: 'Active', cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30' },
+  full: { label: 'Fully booked', cls: 'bg-sky-500/15 text-sky-300 border-sky-400/30' },
+  cancelled: { label: 'Cancelled', cls: 'bg-zinc-500/15 text-zinc-300 border-zinc-400/30' },
+};
+
+export const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'AED'];

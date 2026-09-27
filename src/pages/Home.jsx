@@ -190,9 +190,9 @@ function Stats() {
   ];
   return (
     <section className="bg-navy/60 shadow-[inset_0_1px_0_rgba(230,207,156,.12)]">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-10 px-5 py-16 sm:px-8 lg:grid-cols-4">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-10 px-5 py-16 sm:px-8 md:grid-cols-4">
         {items.map((s, i) => (
-          <Reveal key={s.l} delay={i * 0.1} className={`text-center ${i % 4 ? 'lg:border-l lg:border-white/10' : ''}`}>
+          <Reveal key={s.l} delay={i * 0.1} className={`text-center ${i % 4 ? 'md:border-l md:border-white/10' : ''}`}>
             <div className="gold-text font-display text-5xl font-semibold sm:text-6xl">{s.node}</div>
             <div className="mt-3 text-[11px] uppercase tracking-[0.22em] text-white/55">{s.l}</div>
           </Reveal>
@@ -218,7 +218,9 @@ function FleetCard({ f, i, wide }) {
 }
 
 function FleetShowcase() {
-  const desktop = useMedia('(min-width: 1024px) and (prefers-reduced-motion: no-preference)');
+  // xl, not lg: below this, landscape tablets (iPad Pro is 1024-1194px) get the plain grid
+  // instead of the pinned horizontal scroll-jack, which is easy to make feel janky on touch.
+  const desktop = useMedia('(min-width: 1280px) and (prefers-reduced-motion: no-preference)');
   const wrap = useRef(null);
   const track = useRef(null);
   const [max, setMax] = useState(0);
@@ -364,7 +366,7 @@ function Routes() {
 function Enquire() {
   return (
     <section id="contact" className="defer border-t border-white/10 bg-navy/40 py-28">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 sm:px-8 lg:grid-cols-[1fr_1.2fr]">
+      <div className="mx-auto grid max-w-6xl gap-12 px-5 sm:px-8 md:grid-cols-[1fr_1.2fr]">
         <div>
           <Reveal y={16}><p className="mb-3 text-xs uppercase tracking-[0.35em] text-gold">General Enquiries</p></Reveal>
           <h2 className="font-display text-4xl font-semibold leading-tight sm:text-6xl"><SplitText text="Questions before you fly?" /></h2>

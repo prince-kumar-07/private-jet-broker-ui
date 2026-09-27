@@ -8,6 +8,7 @@ import { ToastProvider } from './components/Toast';
 import { Layout, RequireAuth } from './components/Layout';
 import Home from './pages/Home';
 import Fleet from './pages/Fleet';
+import EmptyLegs from './pages/EmptyLegs';
 import { Login, Register, VerifyEmail } from './pages/Auth';
 import NewRequest from './pages/NewRequest';
 import Contact from './pages/Contact';
@@ -31,6 +32,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="fleet" element={<Fleet />} />
+            <Route path="empty-legs" element={<EmptyLegs />} />
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
             <Route path="verify-email" element={<VerifyEmail />} />

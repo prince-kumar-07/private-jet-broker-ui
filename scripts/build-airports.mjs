@@ -34,7 +34,7 @@ for (const r of data) {
   const name = r[col.name];
   if (!name || type === 'closed' || type === 'balloonport' || type === 'seaplane_base') continue;
 
-  let keep = false;
+  let keep;
   if (iso === 'IN') {
     // Every Indian airport, airstrip and heliport that has an official code (IATA or ICAO)
     keep = ['large_airport', 'medium_airport', 'small_airport'].includes(type) || (type === 'heliport' && (iata || /^VO|^VA|^VE|^VI/.test(r[col.ident])));

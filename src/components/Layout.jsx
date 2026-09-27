@@ -7,6 +7,7 @@ import { useToast } from './Toast';
 import { APP_NAME, APP_SHORT_NAME } from '../config';
 import { JetIcon, Spinner } from './ui';
 import { Grain, Preloader, ScrollProgress } from './Effects';
+import ErrorBoundary from './ErrorBoundary';
 
 export function Layout() {
   const { pathname } = useLocation();
@@ -39,7 +40,7 @@ export function Layout() {
       </motion.div>
       <Navbar />
       <motion.main key={pathname} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: first.current ? 0 : 0.25 }} className="min-h-screen">
-        <Outlet />
+        <ErrorBoundary key={pathname}><Outlet /></ErrorBoundary>
       </motion.main>
       <Footer />
     </>
@@ -66,6 +67,7 @@ function Navbar() {
   const links = [
     { to: '/', label: 'Home', end: true },
     { to: '/fleet', label: 'Fleet' },
+    { to: '/empty-legs', label: 'Empty Legs' },
     { to: '/contact', label: 'Contact' },
     ...(user?.role === 'admin'
       ? [{ to: '/admin', label: 'Admin' }]
@@ -79,7 +81,7 @@ function Navbar() {
     <motion.header
       animate={{ y: hidden && !open ? '-100%' : 0 }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      className={`fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-500 ${solid || open ? 'border-b border-white/10 bg-ink/80 backdrop-blur-xl' : 'border-b border-transparent'}`}
+      className={`fixed inset-x-0 top-0 z-50 pt-[env(safe-area-inset-top)] transition-[background-color,border-color,backdrop-filter] duration-500 ${solid || open ? 'border-b border-white/10 bg-ink/80 backdrop-blur-xl' : 'border-b border-transparent'}`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:h-20 sm:px-8">
         <Link to="/" className="flex items-center gap-3">

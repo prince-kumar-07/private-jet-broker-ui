@@ -5,11 +5,13 @@ import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { StatusBadge, Spinner, fmtDate, fmtMoney } from '../components/ui';
 import Timeline from '../components/Timeline';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function MyRequests() {
   const [rows, setRows] = useState(null);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
+  const [pendingCancel, setPendingCancel] = useState(null);
   const openId = useLocation().state?.openId;
   const toast = useToast();
 
@@ -18,7 +20,7 @@ export default function MyRequests() {
   }, [openId]);
 
   const cancel = async (id) => {
-    if (!confirm('Cancel this request?')) return;
+    setPendingCancel(null);
     try {
       const updated = await api(`/requests/${id}/cancel`, { method: 'PATCH' });
       setRows((r) => r.map((x) => (x.id === id ? updated : x)));
@@ -69,7 +71,7 @@ export default function MyRequests() {
                         </div>
                       )}
                       {['submitted', 'under_review', 'quoted'].includes(r.status) && (
-                        <button onClick={() => cancel(r.id)} className="text-sm text-rose-300 hover:underline">Cancel request</button>
+                        <button onClick={() => setPendingCancel(r)} className="text-sm text-rose-300 hover:underline">Cancel request</button>
                       )}
                     </div>
                     <Timeline history={r.history} />
@@ -80,6 +82,15 @@ export default function MyRequests() {
           </motion.div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={!!pendingCancel}
+        title="Cancel this request?"
+        message={pendingCancel ? `${pendingCancel.origin} → ${pendingCancel.destination} (${pendingCancel.ref}) will be cancelled. This cannot be undone.` : ''}
+        confirmLabel="Cancel request"
+        onConfirm={() => cancel(pendingCancel.id)}
+        onCancel={() => setPendingCancel(null)}
+      />
     </div>
   );
 }
