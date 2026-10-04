@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../lib/api';
@@ -24,6 +24,17 @@ export default function NewRequest() {
   const [sent, setSent] = useState(null);
   const guest = !user;
 
+  const [legKeys, setLegKeys] = useState([0, 1]);
+  const legKeySeq = useRef(2);
+  const addLeg = () => setLegKeys((k) => (k.length < 10 ? [...k, legKeySeq.current++] : k));
+  const removeLeg = (key) => setLegKeys((k) => (k.length > 2 ? k.filter((x) => x !== key) : k));
+
+  const [showManifest, setShowManifest] = useState(false);
+  const [paxKeys, setPaxKeys] = useState([]);
+  const paxKeySeq = useRef(0);
+  const addPax = () => setPaxKeys((k) => [...k, paxKeySeq.current++]);
+  const removePax = (key) => setPaxKeys((k) => k.filter((x) => x !== key));
+
   if (loading) return <div className="grid min-h-screen place-items-center"><Spinner /></div>;
   if (user?.role === 'admin') return <Navigate to="/admin" replace />;
 
@@ -39,13 +50,22 @@ export default function NewRequest() {
     try {
       const body = {
         trip_type: trip,
-        origin: f.get('origin'), destination: f.get('destination'),
-        depart_date: f.get('depart_date'), depart_time: f.get('depart_time'),
-        return_date: f.get('return_date'),
         passengers: pax,
         aircraft_pref: f.get('aircraft_pref'), luggage: f.get('luggage'),
         pets: f.get('pets') === 'on', notes: f.get('notes'), contact_phone: f.get('contact_phone'),
       };
+      if (trip === 'multi_leg') {
+        body.legs = legKeys.map((k) => ({
+          origin: f.get(`leg-${k}-origin`), destination: f.get(`leg-${k}-destination`),
+          depart_date: f.get(`leg-${k}-depart_date`), depart_time: f.get(`leg-${k}-depart_time`) || null,
+        }));
+      } else {
+        body.origin = f.get('origin'); body.destination = f.get('destination');
+        body.depart_date = f.get('depart_date'); body.depart_time = f.get('depart_time');
+        body.return_date = f.get('return_date');
+      }
+      const manifest = paxKeys.map((k) => ({ name: f.get(`pax-${k}-name`)?.trim(), passport_number: f.get(`pax-${k}-passport`)?.trim() || null })).filter((p) => p.name);
+      if (manifest.length) body.passenger_manifest = manifest;
       if (guest) {
         const created = await api('/public/availability', { method: 'POST', body: { ...body, name: f.get('name'), email: f.get('email'), website: f.get('website') } });
         toast.success(`Reference ${created.ref}. We emailed you a confirmation.`, { title: 'Request received' });
@@ -99,21 +119,40 @@ export default function NewRequest() {
           ))}
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div><label className="label" htmlFor="origin">From</label><AirportInput id="origin" name="origin" defaultValue={params.get('from') || ''} required /></div>
-          <div><label className="label" htmlFor="destination">To</label><AirportInput id="destination" name="destination" defaultValue={params.get('to') || ''} required /></div>
-          <div><label className="label" htmlFor="depart_date">Departure date</label><input id="depart_date" name="depart_date" defaultValue={params.get('date') || ''} type="date" min={today} required className="field" /></div>
-          <div><label className="label" htmlFor="depart_time">Preferred time</label><input id="depart_time" name="depart_time" type="time" className="field" /></div>
-          <AnimatePresence>
-            {trip === 'round_trip' && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="sm:col-span-2">
-                <label className="label" htmlFor="return_date">Return date</label>
-                <input id="return_date" name="return_date" type="date" min={today} required className="field" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-        {trip === 'multi_leg' && <p className="rounded-lg border border-gold/30 bg-gold/10 px-4 py-3 text-sm text-gold-soft">Add your additional legs in the notes below and we will build the full itinerary.</p>}
+        {trip === 'multi_leg' ? (
+          <div className="space-y-4">
+            {legKeys.map((k, i) => (
+              <div key={k} className="rounded-xl border border-white/10 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-widest text-gold">Leg {i + 1}</span>
+                  {legKeys.length > 2 && <button type="button" onClick={() => removeLeg(k)} className="text-xs text-rose-300 hover:underline">Remove</button>}
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div><label className="label" htmlFor={`leg-${k}-origin`}>From</label><AirportInput id={`leg-${k}-origin`} name={`leg-${k}-origin`} required /></div>
+                  <div><label className="label" htmlFor={`leg-${k}-destination`}>To</label><AirportInput id={`leg-${k}-destination`} name={`leg-${k}-destination`} required /></div>
+                  <div><label className="label" htmlFor={`leg-${k}-depart_date`}>Date</label><input id={`leg-${k}-depart_date`} name={`leg-${k}-depart_date`} type="date" min={today} required className="field" /></div>
+                  <div><label className="label" htmlFor={`leg-${k}-depart_time`}>Time</label><input id={`leg-${k}-depart_time`} name={`leg-${k}-depart_time`} type="time" className="field" /></div>
+                </div>
+              </div>
+            ))}
+            {legKeys.length < 10 && <button type="button" onClick={addLeg} className="btn-ghost !py-2 text-sm">+ Add another leg</button>}
+          </div>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div><label className="label" htmlFor="origin">From</label><AirportInput id="origin" name="origin" defaultValue={params.get('from') || ''} required /></div>
+            <div><label className="label" htmlFor="destination">To</label><AirportInput id="destination" name="destination" defaultValue={params.get('to') || ''} required /></div>
+            <div><label className="label" htmlFor="depart_date">Departure date</label><input id="depart_date" name="depart_date" defaultValue={params.get('date') || ''} type="date" min={today} required className="field" /></div>
+            <div><label className="label" htmlFor="depart_time">Preferred time</label><input id="depart_time" name="depart_time" type="time" className="field" /></div>
+            <AnimatePresence>
+              {trip === 'round_trip' && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="sm:col-span-2">
+                  <label className="label" htmlFor="return_date">Return date</label>
+                  <input id="return_date" name="return_date" type="date" min={today} required className="field" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
@@ -143,7 +182,27 @@ export default function NewRequest() {
         </div>
 
         <label className="flex min-h-[44px] items-center gap-3 text-sm text-white/80"><input type="checkbox" name="pets" className="h-5 w-5 accent-[#c9a45c]" /> Travelling with pets</label>
-        <div><label className="label" htmlFor="notes">Special requests</label><textarea id="notes" name="notes" rows={4} maxLength={2000} placeholder="Catering, ground transport, additional legs..." className="field resize-y" /></div>
+
+        <div>
+          <button type="button" onClick={() => setShowManifest((s) => !s)} className="text-sm text-gold hover:underline">
+            {showManifest ? 'Hide passenger names' : '+ Add passenger names for manifest (optional)'}
+          </button>
+          {showManifest && (
+            <div className="mt-4 space-y-3">
+              <p className="text-xs text-white/45">Useful for international trips or permits. You can also add these later.</p>
+              {paxKeys.map((k, i) => (
+                <div key={k} className="flex gap-3">
+                  <input name={`pax-${k}-name`} placeholder={`Passenger ${i + 1} name`} className="field flex-1" />
+                  <input name={`pax-${k}-passport`} placeholder="Passport no. (optional)" className="field w-40" />
+                  <button type="button" onClick={() => removePax(k)} aria-label="Remove passenger" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/15 text-rose-300 hover:border-rose-400/40">×</button>
+                </div>
+              ))}
+              <button type="button" onClick={addPax} className="btn-ghost !py-2 text-xs">+ Add passenger</button>
+            </div>
+          )}
+        </div>
+
+        <div><label className="label" htmlFor="notes">Special requests</label><textarea id="notes" name="notes" rows={4} maxLength={2000} placeholder="Catering, ground transport..." className="field resize-y" /></div>
 
         {error && <p role="alert" className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">{error}</p>}
         <button className="btn-gold w-full" disabled={busy}>{busy ? 'Sending...' : guest ? 'Check Availability' : 'Submit Request'}</button>

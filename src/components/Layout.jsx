@@ -68,11 +68,12 @@ function Navbar() {
     { to: '/', label: 'Home', end: true },
     { to: '/fleet', label: 'Fleet' },
     { to: '/empty-legs', label: 'Empty Legs' },
+    { to: '/track', label: 'Track Flight' },
     { to: '/contact', label: 'Contact' },
     ...(user?.role === 'admin'
       ? [{ to: '/admin', label: 'Admin' }]
       : user
-        ? [{ to: '/request', label: 'Request a Flight' }, { to: '/my-requests', label: 'My Requests' }]
+        ? [{ to: '/request', label: 'Request a Flight' }, { to: '/my-requests', label: 'My Requests' }, { to: '/account', label: 'Account' }]
         : [{ to: '/request', label: 'Check Availability' }]),
   ];
   const linkCls = ({ isActive }) => `navlink relative py-1 text-sm tracking-wide transition-colors hover:text-gold ${isActive ? 'text-gold active' : 'text-white/80'}`;
@@ -140,6 +141,11 @@ function Footer() {
     <footer className="border-t border-white/10 bg-navy/60">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-5 py-10 text-sm text-white/50 sm:flex-row sm:px-8">
         <div className="flex items-center gap-3"><JetIcon className="h-4 w-auto text-gold" /><span className="font-display uppercase tracking-[0.2em] text-white/80">{APP_NAME}</span></div>
+        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-xs">
+          <Link to="/terms" className="hover:text-white">Terms</Link>
+          <Link to="/privacy" className="hover:text-white">Privacy</Link>
+          <Link to="/cancellation-policy" className="hover:text-white">Cancellation Policy</Link>
+        </nav>
         <p>© {new Date().getFullYear()} {APP_NAME}. Private jet brokerage.</p>
       </div>
     </footer>

@@ -1,15 +1,29 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { api } from '../lib/api';
+import { api, getToken } from '../lib/api';
+import { API_URL } from '../config';
 import { useToast } from '../components/Toast';
-import { STATUS, EMPTY_LEG_STATUS, CURRENCIES } from '../data/content';
+import { STATUS, EMPTY_LEG_STATUS, CURRENCIES, PAYMENT_STATUS } from '../data/content';
 import AirportInput from '../components/AirportInput';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { StatusBadge, Spinner, fmtDate, fmtMoney } from '../components/ui';
 import Timeline from '../components/Timeline';
 
 const PAGE_SIZE = 50;
+
+async function exportCsv(status, q, toast) {
+  try {
+    const qs = new URLSearchParams({ ...(status && { status }), ...(q && { q }) });
+    const res = await fetch(`${API_URL}/admin/requests/export?${qs}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+    if (!res.ok) throw new Error('Export failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'requests.csv'; a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) { toast.error(e.message); }
+}
 
 export function AdminDashboard() {
   const nav = useNavigate();
@@ -72,8 +86,8 @@ export function AdminDashboard() {
     <div className="mx-auto max-w-7xl px-5 pb-24 pt-28 sm:px-8 sm:pt-36">
       <h1 className="font-display text-4xl font-semibold sm:text-5xl">Admin <span className="gold-text">Dashboard</span></h1>
 
-      <div role="tablist" className="mt-8 inline-grid grid-cols-3 gap-1 rounded-xl bg-white/5 p-1">
-        {[['requests', 'Flight requests'], ['empty_legs', 'Empty legs'], ['enquiries', 'General enquiries']].map(([v, l]) => (
+      <div role="tablist" className="mt-8 inline-grid grid-cols-2 gap-1 rounded-xl bg-white/5 p-1 sm:grid-cols-5">
+        {[['requests', 'Flight requests'], ['empty_legs', 'Empty legs'], ['enquiries', 'General enquiries'], ['admins', 'Admins'], ['audit', 'Activity log']].map(([v, l]) => (
           <button key={v} role="tab" aria-selected={tab === v} onClick={() => setTab(v)}
             className={`relative min-h-[44px] rounded-lg px-2 text-xs transition-colors sm:px-4 sm:text-sm ${tab === v ? 'bg-gold font-medium text-black' : 'text-white/70 hover:text-white'}`}>
             {l}{v === 'enquiries' && stats?.newEnquiries > 0 && <span className="ml-2 rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">{stats.newEnquiries}</span>}
@@ -83,6 +97,10 @@ export function AdminDashboard() {
 
       {tab === 'empty_legs' ? (
         <EmptyLegsPanel />
+      ) : tab === 'admins' ? (
+        <AdminsPanel toast={toast} />
+      ) : tab === 'audit' ? (
+        <AuditLogPanel />
       ) : tab === 'enquiries' ? (
         <div className="mt-8">
           {error && <p role="alert" className="text-rose-300">{error}</p>}
@@ -132,6 +150,7 @@ export function AdminDashboard() {
           <option value="">All statuses</option>
           {Object.entries(STATUS).map(([k, s]) => <option key={k} value={k}>{s.label}</option>)}
         </select>
+        <button type="button" onClick={() => exportCsv(status, q, toast)} className="btn-ghost !py-2 text-sm">Export CSV</button>
       </div>
 
       {error && <p role="alert" className="mt-6 text-rose-300">{error}</p>}
@@ -278,6 +297,17 @@ function EmptyLegsPanel() {
 
 function EmptyLegCard({ leg, onCancel, onReactivate }) {
   const st = EMPTY_LEG_STATUS[leg.status] || EMPTY_LEG_STATUS.active;
+  const booked = leg.seats_total - leg.seats_available;
+  const [open, setOpen] = useState(false);
+  const [bookings, setBookings] = useState(null);
+  const [error, setError] = useState('');
+
+  const toggle = () => {
+    if (open) { setOpen(false); return; }
+    setOpen(true);
+    if (!bookings) api(`/admin/empty-legs/${leg.id}/bookings`).then(setBookings).catch((e) => setError(e.message));
+  };
+
   return (
     <div className="card p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -293,10 +323,122 @@ function EmptyLegCard({ leg, onCancel, onReactivate }) {
         <span className="gold-text font-medium">{fmtMoney(leg.price, leg.currency)} / seat</span>
       </div>
       {leg.notes && <p className="mt-3 text-sm text-white/55">{leg.notes}</p>}
-      <div className="mt-4">
+      <div className="mt-4 flex flex-wrap gap-3">
         {leg.status === 'cancelled'
           ? <button onClick={onReactivate} className="rounded-full border border-emerald-400/30 px-4 py-1.5 text-xs text-emerald-300 hover:bg-emerald-500/10">Reactivate</button>
           : <button onClick={onCancel} className="rounded-full border border-rose-400/30 px-4 py-1.5 text-xs text-rose-300 hover:bg-rose-500/10">Cancel listing</button>}
+        {booked > 0 && (
+          <button onClick={toggle} className="rounded-full border border-white/15 px-4 py-1.5 text-xs text-white/70 hover:bg-white/5">
+            {open ? 'Hide bookings' : `View bookings (${booked})`}
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
+          {error && <p role="alert" className="text-xs text-rose-300">{error}</p>}
+          {!bookings && !error && <Spinner />}
+          {bookings?.map((b) => (
+            <div key={b.id} className="rounded-lg bg-white/5 p-3 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-medium">{b.contact_name || 'No name given'}</span>
+                <span className="font-mono text-xs text-white/40">{b.ref}</span>
+              </div>
+              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/55">
+                {b.contact_email && <a className="text-gold hover:underline" href={`mailto:${b.contact_email}`}>{b.contact_email}</a>}
+                <a className="text-gold hover:underline" href={`tel:${b.contact_phone}`}>{b.contact_phone}</a>
+                <span>{b.passengers} pax</span>
+                <span className="capitalize">{b.source}</span>
+                <span>{fmtDate(b.created_at)}</span>
+              </div>
+            </div>
+          ))}
+          {bookings?.length === 0 && <p className="text-xs text-white/45">No bookings recorded.</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminsPanel({ toast }) {
+  const [admins, setAdmins] = useState(null);
+  const [error, setError] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+
+  const load = useCallback(() => { api('/admin/admins').then(setAdmins).catch((e) => setError(e.message)); }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const create = async (e) => {
+    e.preventDefault();
+    setCreating(true);
+    const f = new FormData(e.target);
+    try {
+      await api('/admin/admins', { method: 'POST', body: { name: f.get('name'), email: f.get('email'), password: f.get('password') } });
+      toast.success('The new admin can now sign in.', { title: 'Admin created' });
+      setFormKey((k) => k + 1);
+      load();
+    } catch (err) { toast.error(err.message); }
+    finally { setCreating(false); }
+  };
+
+  return (
+    <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
+      <div>
+        {error && <p role="alert" className="text-rose-300">{error}</p>}
+        {!admins && !error && <Spinner />}
+        <div className="space-y-3">
+          {admins?.map((a) => (
+            <div key={a.id} className="card flex flex-wrap items-center justify-between gap-3 p-5">
+              <div>
+                <div className="font-medium">{a.name}</div>
+                <div className="text-sm text-white/50">{a.email}</div>
+              </div>
+              <div className="text-xs text-white/40">Added {fmtDate(a.created_at)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <form key={formKey} onSubmit={create} className="card h-fit space-y-5 p-6">
+        <h2 className="font-display text-2xl">Add an admin</h2>
+        <div><label className="label" htmlFor="ad-name">Full name</label><input id="ad-name" name="name" required className="field" /></div>
+        <div><label className="label" htmlFor="ad-email">Email</label><input id="ad-email" name="email" type="email" required className="field" /></div>
+        <div><label className="label" htmlFor="ad-password">Password (8+ characters)</label><input id="ad-password" name="password" type="password" minLength={8} required className="field" /></div>
+        <button className="btn-gold w-full" disabled={creating}>{creating ? 'Creating...' : 'Create admin'}</button>
+      </form>
+    </div>
+  );
+}
+
+const AUDIT_LABEL = {
+  'request.status_change': 'changed a request status',
+  'requests.export': 'exported requests as CSV',
+  'empty_leg.create': 'published an empty leg',
+  'empty_leg.status_change': 'changed an empty leg status',
+  'admin.create': 'added an admin',
+};
+
+function AuditLogPanel() {
+  const [rows, setRows] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => { api('/admin/audit-log').then(setRows).catch((e) => setError(e.message)); }, []);
+
+  return (
+    <div className="mt-8">
+      {error && <p role="alert" className="text-rose-300">{error}</p>}
+      {!rows && !error && <Spinner />}
+      {rows?.length === 0 && <div className="card p-10 text-center text-white/60">No activity recorded yet.</div>}
+      <div className="space-y-2">
+        {rows?.map((a) => (
+          <div key={a.id} className="card flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+            <div>
+              <span className="font-medium">{a.admin?.name || 'Unknown admin'}</span>
+              <span className="text-white/60"> {AUDIT_LABEL[a.action] || a.action}</span>
+              {a.target_label && <span className="text-gold"> · {a.target_label}</span>}
+            </div>
+            <div className="text-xs text-white/40">{fmtDate(a.created_at)}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -346,12 +488,29 @@ export function AdminRequest() {
             <Info k="Contact phone" v={(r.contact_phone || r.customer_phone) ? <a className="text-gold" href={`tel:${r.contact_phone || r.customer_phone}`}>{r.contact_phone || r.customer_phone}</a> : '-'} />
             {r.customer_phone && r.contact_phone && r.customer_phone !== r.contact_phone && <Info k="Account phone" v={<a className="text-gold" href={`tel:${r.customer_phone}`}>{r.customer_phone}</a>} />}
             <Info k="Trip type" v={r.trip_type.replace('_', ' ')} />
-            <Info k="Departure" v={`${fmtDate(r.depart_date)} ${r.depart_time || ''}`} />
-            <Info k="Return" v={fmtDate(r.return_date)} />
+            {r.trip_type === 'multi_leg' && r.legs?.length > 0 ? (
+              <div className="sm:col-span-2">
+                <div className="text-[11px] uppercase tracking-widest text-white/40">Legs</div>
+                <div className="mt-1 space-y-1">
+                  {r.legs.map((leg, li) => (
+                    <div key={li}>{leg.origin} <span className="text-gold">→</span> {leg.destination} <span className="text-white/40">· {fmtDate(leg.depart_date)}{leg.depart_time && ` ${leg.depart_time}`}</span></div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                <Info k="Departure" v={`${fmtDate(r.depart_date)} ${r.depart_time || ''}`} />
+                <Info k="Return" v={fmtDate(r.return_date)} />
+              </>
+            )}
             <Info k="Passengers" v={r.passengers} />
             <Info k="Aircraft pref." v={r.aircraft_pref || 'None'} />
             <Info k="Luggage" v={r.luggage || '-'} />
             <Info k="Pets" v={r.pets ? 'Yes' : 'No'} />
+            <Info k="Payment" v={<span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs ${PAYMENT_STATUS[r.payment?.status || 'unpaid'].cls}`}>{PAYMENT_STATUS[r.payment?.status || 'unpaid'].label}</span>} />
+            {r.passenger_manifest?.length > 0 && (
+              <div className="sm:col-span-2"><Info k="Passenger manifest" v={r.passenger_manifest.map((p) => p.passport_number ? `${p.name} (${p.passport_number})` : p.name).join(', ')} /></div>
+            )}
             {r.notes && <div className="sm:col-span-2"><Info k="Notes" v={r.notes} /></div>}
           </div>
           <div className="card p-6"><h2 className="mb-5 font-display text-2xl">History</h2><Timeline history={r.history} /></div>

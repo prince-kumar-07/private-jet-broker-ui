@@ -2,16 +2,21 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../lib/api';
+import { useAuth } from '../lib/auth';
 import { useToast } from '../components/Toast';
 import { StatusBadge, Spinner, fmtDate, fmtMoney } from '../components/ui';
+import { PAYMENT_STATUS } from '../data/content';
+import { loadRazorpay } from '../lib/razorpay';
 import Timeline from '../components/Timeline';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function MyRequests() {
+  const { user } = useAuth();
   const [rows, setRows] = useState(null);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
   const [pendingCancel, setPendingCancel] = useState(null);
+  const [paying, setPaying] = useState(null);
   const openId = useLocation().state?.openId;
   const toast = useToast();
 
@@ -26,6 +31,34 @@ export default function MyRequests() {
       setRows((r) => r.map((x) => (x.id === id ? updated : x)));
       toast.info('Your request has been cancelled', { title: updated.ref });
     } catch (e) { toast.error(e.message); }
+  };
+
+  const pay = async (r) => {
+    setPaying(r.id);
+    try {
+      const order = await api(`/requests/${r.id}/pay/order`, { method: 'POST' });
+      const Razorpay = await loadRazorpay();
+      const rzp = new Razorpay({
+        key: order.key_id, amount: order.amount, currency: order.currency, order_id: order.order_id,
+        name: 'Imperial Air Charter', description: `Charter ${r.ref}`,
+        prefill: { name: user?.name, email: user?.email, contact: user?.phone },
+        theme: { color: '#c9a45c' },
+        handler: async (response) => {
+          try {
+            const updated = await api(`/requests/${r.id}/pay/verify`, { method: 'POST', body: response });
+            setRows((rs) => rs.map((x) => (x.id === r.id ? updated : x)));
+            toast.success('Payment received. We will be in touch to confirm final logistics.', { title: 'Payment successful' });
+          } catch (e) { toast.error(e.message); }
+        },
+        modal: { ondismiss: () => setPaying(null) },
+      });
+      rzp.on('payment.failed', () => toast.error('Payment failed. Please try again.'));
+      rzp.open();
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setPaying(null);
+    }
   };
 
   return (
@@ -57,17 +90,44 @@ export default function MyRequests() {
                   <div className="grid gap-8 border-t border-white/10 p-5 sm:p-6 md:grid-cols-2">
                     <div className="space-y-3 text-sm">
                       <Row k="Trip" v={r.trip_type.replace('_', ' ')} />
-                      <Row k="Departure" v={`${fmtDate(r.depart_date)} ${r.depart_time || ''}`} />
-                      {r.return_date && <Row k="Return" v={fmtDate(r.return_date)} />}
+                      {r.trip_type === 'multi_leg' && r.legs?.length > 0 ? (
+                        <div className="flex gap-3">
+                          <span className="w-24 shrink-0 text-white/40">Legs</span>
+                          <div className="space-y-1">
+                            {r.legs.map((leg, li) => (
+                              <div key={li}>{leg.origin} <span className="text-gold">→</span> {leg.destination} <span className="text-white/40">· {fmtDate(leg.depart_date)}{leg.depart_time && ` ${leg.depart_time}`}</span></div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <Row k="Departure" v={`${fmtDate(r.depart_date)} ${r.depart_time || ''}`} />
+                          {r.return_date && <Row k="Return" v={fmtDate(r.return_date)} />}
+                        </>
+                      )}
                       <Row k="Aircraft" v={r.aircraft_pref || 'No preference'} />
                       {r.contact_phone && <Row k="Contact" v={r.contact_phone} />}
+                      {r.passenger_manifest?.length > 0 && (
+                        <div className="flex gap-3">
+                          <span className="w-24 shrink-0 text-white/40">Passengers</span>
+                          <div>{r.passenger_manifest.map((p) => p.name).join(', ')}</div>
+                        </div>
+                      )}
                       {r.notes && <Row k="Notes" v={r.notes} />}
                       {r.quote_amount != null && (
                         <div className="rounded-xl border border-gold/40 bg-gold/10 p-4">
-                          <div className="text-xs uppercase tracking-widest text-gold">Your quote</div>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="text-xs uppercase tracking-widest text-gold">Your quote</div>
+                            <span className={`inline-block rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${PAYMENT_STATUS[r.payment?.status || 'unpaid'].cls}`}>{PAYMENT_STATUS[r.payment?.status || 'unpaid'].label}</span>
+                          </div>
                           <div className="gold-text font-display text-3xl">{fmtMoney(r.quote_amount, r.quote_currency)}</div>
                           {r.quote_aircraft && <div className="text-white/70">{r.quote_aircraft}</div>}
                           {r.admin_note && <p className="mt-2 text-white/60">{r.admin_note}</p>}
+                          {['quoted', 'confirmed'].includes(r.status) && r.payment?.status !== 'paid' && (
+                            <button onClick={() => pay(r)} disabled={paying === r.id} className="btn-gold mt-4 w-full !py-2.5 text-sm">
+                              {paying === r.id ? 'Opening payment...' : `Pay ${fmtMoney(r.quote_amount, r.quote_currency)}`}
+                            </button>
+                          )}
                         </div>
                       )}
                       {['submitted', 'under_review', 'quoted'].includes(r.status) && (

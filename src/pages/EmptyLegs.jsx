@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth';
 import { useToast } from '../components/Toast';
 import { Reveal, Spinner, fmtDate, fmtMoney } from '../components/ui';
 import PhoneInput, { isValidPhone } from '../components/PhoneInput';
+import AirportInput from '../components/AirportInput';
 
 export default function EmptyLegs() {
   const { user } = useAuth();
@@ -32,6 +33,8 @@ export default function EmptyLegs() {
         <p className="mt-4 text-white/60">Aircraft already flying a route with open seats, at a fraction of the usual charter price. Availability changes fast — book directly to confirm your seat.</p>
       </Reveal>
 
+      <RouteAlertForm user={user} />
+
       {error && <p role="alert" className="mt-10 text-center text-rose-300">{error}</p>}
       {!legs && !error && <div className="mt-16"><Spinner /></div>}
       {legs?.length === 0 && <div className="card mt-12 p-10 text-center text-white/60">No empty legs available right now. Check back soon, or <Link to="/request" className="text-gold hover:underline">request a custom quote</Link>.</div>}
@@ -45,6 +48,45 @@ export default function EmptyLegs() {
       </div>
 
       <BookingModal leg={booking} user={user} toast={toast} onClose={() => setBooking(null)} onBooked={onBooked} />
+    </div>
+  );
+}
+
+function RouteAlertForm({ user }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError(''); setBusy(true);
+    const f = new FormData(e.target);
+    try {
+      await api('/public/empty-legs/alerts', { method: 'POST', body: { origin: f.get('origin'), destination: f.get('destination'), email: f.get('email') } });
+      setDone(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="card mx-auto mt-10 max-w-2xl p-5 sm:p-6">
+      {!open ? (
+        <button onClick={() => setOpen(true)} className="text-sm text-gold hover:underline">+ Get notified when a route opens up</button>
+      ) : done ? (
+        <p className="text-sm text-emerald-300">You are on the list. We will email you when a matching empty leg is published.</p>
+      ) : (
+        <form onSubmit={submit} className="grid gap-4 sm:grid-cols-3">
+          <div><label className="label" htmlFor="alert-origin">From</label><AirportInput id="alert-origin" name="origin" required /></div>
+          <div><label className="label" htmlFor="alert-destination">To</label><AirportInput id="alert-destination" name="destination" required /></div>
+          <div><label className="label" htmlFor="alert-email">Email</label><input id="alert-email" name="email" type="email" required defaultValue={user?.email || ''} className="field" /></div>
+          {error && <p role="alert" className="text-sm text-rose-300 sm:col-span-3">{error}</p>}
+          <button className="btn-gold sm:col-span-3" disabled={busy}>{busy ? 'Saving...' : 'Notify me'}</button>
+        </form>
+      )}
     </div>
   );
 }

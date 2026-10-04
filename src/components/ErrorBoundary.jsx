@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import * as Sentry from '@sentry/react';
 import { JetIcon } from './ui';
 
 export default class ErrorBoundary extends Component {
@@ -10,6 +11,7 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('Unhandled UI error:', error, info);
+    Sentry.captureException(error);
   }
 
   render() {

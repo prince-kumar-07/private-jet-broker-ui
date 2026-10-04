@@ -56,3 +56,10 @@ export const EMPTY_LEG_STATUS = {
 };
 
 export const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'AED'];
+
+export const PAYMENT_STATUS = {
+  unpaid: { label: 'Unpaid', cls: 'bg-zinc-500/15 text-zinc-300 border-zinc-400/30' },
+  deposit_paid: { label: 'Deposit paid', cls: 'bg-amber-500/15 text-amber-300 border-amber-400/30' },
+  paid: { label: 'Paid', cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30' },
+  refunded: { label: 'Refunded', cls: 'bg-sky-500/15 text-sky-300 border-sky-400/30' },
+};

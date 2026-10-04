@@ -9,10 +9,13 @@ import { Layout, RequireAuth } from './components/Layout';
 import Home from './pages/Home';
 import Fleet from './pages/Fleet';
 import EmptyLegs from './pages/EmptyLegs';
-import { Login, Register, VerifyEmail } from './pages/Auth';
+import TrackFlight from './pages/TrackFlight';
+import { Login, Register, VerifyEmail, ForgotPassword, ResetPassword } from './pages/Auth';
 import NewRequest from './pages/NewRequest';
 import Contact from './pages/Contact';
 import MyRequests from './pages/MyRequests';
+import Account from './pages/Account';
+import { Terms, Privacy, CancellationPolicy } from './pages/Legal';
 import { AdminDashboard, AdminRequest } from './pages/Admin';
 
 const NotFound = () => (
@@ -33,12 +36,19 @@ export default function App() {
             <Route index element={<Home />} />
             <Route path="fleet" element={<Fleet />} />
             <Route path="empty-legs" element={<EmptyLegs />} />
+            <Route path="track" element={<TrackFlight />} />
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
             <Route path="verify-email" element={<VerifyEmail />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
             <Route path="request" element={<NewRequest />} />
             <Route path="contact" element={<Contact />} />
+            <Route path="terms" element={<Terms />} />
+            <Route path="privacy" element={<Privacy />} />
+            <Route path="cancellation-policy" element={<CancellationPolicy />} />
             <Route path="my-requests" element={<RequireAuth role="user"><MyRequests /></RequireAuth>} />
+            <Route path="account" element={<RequireAuth role="user"><Account /></RequireAuth>} />
             <Route path="admin" element={<RequireAuth role="admin"><AdminDashboard /></RequireAuth>} />
             <Route path="admin/requests/:id" element={<RequireAuth role="admin"><AdminRequest /></RequireAuth>} />
             <Route path="*" element={<NotFound />} />

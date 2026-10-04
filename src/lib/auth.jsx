@@ -30,6 +30,9 @@ export function AuthProvider({ children }) {
     register: (form) => api('/auth/register', { method: 'POST', body: form }),
     verifyEmail: (email, code) => authenticate('/auth/verify-email', { email, code }),
     resendOtp: (email) => api('/auth/resend-otp', { method: 'POST', body: { email } }),
+    forgotPassword: (email) => api('/auth/forgot-password', { method: 'POST', body: { email } }),
+    resetPassword: (token, password) => authenticate('/auth/reset-password', { token, password }),
+    changePassword: (currentPassword, newPassword) => api('/auth/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
     logout: () => { setToken(null); setUser(null); },
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

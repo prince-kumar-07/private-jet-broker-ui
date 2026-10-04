@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../components/Toast';
@@ -50,9 +50,60 @@ export function Login() {
     <AuthShell title="Welcome back" subtitle="Sign in to manage your flight requests." footer={<>New here? <Link to="/register" className="text-gold hover:underline">Create an account</Link></>}>
       <form onSubmit={submit} className="space-y-5">
         <div><label className="label" htmlFor="email">Email</label><input id="email" name="email" type="email" required autoComplete="email" className="field" /></div>
-        <div><label className="label" htmlFor="password">Password</label><input id="password" name="password" type="password" required autoComplete="current-password" className="field" /></div>
+        <div>
+          <div className="flex items-center justify-between"><label className="label !mb-0" htmlFor="password">Password</label><Link to="/forgot-password" className="text-xs text-gold hover:underline">Forgot password?</Link></div>
+          <input id="password" name="password" type="password" required autoComplete="current-password" className="field mt-2" />
+        </div>
         <ErrorBox msg={error} />
         <button className="btn-gold w-full" disabled={busy}>{busy ? 'Signing in...' : 'Sign in'}</button>
+      </form>
+    </AuthShell>
+  );
+}
+
+export function ForgotPassword() {
+  const { forgotPassword } = useAuth();
+  const [sent, setSent] = useState(false);
+  const { error, busy, submit } = useSubmit(async (f) => {
+    await forgotPassword(f.get('email'));
+    setSent(true);
+  });
+  return (
+    <AuthShell title="Reset password" subtitle="Enter the email on your account and we'll send a reset link." footer={<>Remembered it? <Link to="/login" className="text-gold hover:underline">Sign in</Link></>}>
+      {sent ? (
+        <p className="text-center text-white/70">If an account exists for that email, a reset link is on its way. It expires in 30 minutes.</p>
+      ) : (
+        <form onSubmit={submit} className="space-y-5">
+          <div><label className="label" htmlFor="email">Email</label><input id="email" name="email" type="email" required autoComplete="email" className="field" /></div>
+          <ErrorBox msg={error} />
+          <button className="btn-gold w-full" disabled={busy}>{busy ? 'Sending...' : 'Send reset link'}</button>
+        </form>
+      )}
+    </AuthShell>
+  );
+}
+
+export function ResetPassword() {
+  const nav = useNavigate();
+  const toast = useToast();
+  const [params] = useSearchParams();
+  const token = params.get('token') || '';
+  const { resetPassword } = useAuth();
+  const { error, busy, submit } = useSubmit(async (f) => {
+    const password = f.get('password');
+    if (password !== f.get('confirm')) throw new Error('Passwords do not match');
+    const u = await resetPassword(token, password);
+    toast.success('Your password has been reset', { title: 'Signed in' });
+    nav(u.role === 'admin' ? '/admin' : '/my-requests', { replace: true });
+  });
+  if (!token) return <Navigate to="/forgot-password" replace />;
+  return (
+    <AuthShell title="Set a new password" subtitle="Choose a new password for your account." footer={<>Back to <Link to="/login" className="text-gold hover:underline">sign in</Link></>}>
+      <form onSubmit={submit} className="space-y-5">
+        <div><label className="label" htmlFor="password">New password (8+ characters)</label><input id="password" name="password" type="password" minLength={8} required autoComplete="new-password" className="field" /></div>
+        <div><label className="label" htmlFor="confirm">Confirm password</label><input id="confirm" name="confirm" type="password" minLength={8} required autoComplete="new-password" className="field" /></div>
+        <ErrorBox msg={error} />
+        <button className="btn-gold w-full" disabled={busy}>{busy ? 'Saving...' : 'Reset password'}</button>
       </form>
     </AuthShell>
   );
