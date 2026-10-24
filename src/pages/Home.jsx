@@ -9,6 +9,7 @@ import { APP_NAME, HERO_VIDEOS } from '../config';
 import HeroVideo from '../components/HeroVideo';
 import EnquiryForm from '../components/EnquiryForm';
 import { ContactDetails } from './Contact';
+import { TrustBar, Principles, ScrollBand } from '../components/Trust';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -81,7 +82,11 @@ function Hero() {
   const stars = useMemo(() => Array.from({ length: 48 }, (_, i) => ({ id: i, x: Math.random() * 100, y: Math.random() * 75, s: Math.random() * 2 + 0.8, d: Math.random() * 5 })), []);
   const on = (v) => (reduce ? undefined : v);
 
-  const wantVideo = HERO_VIDEOS.length > 0 && !reduce && !navigator.connection?.saveData;
+  // The hero clips are 3-15 MB each. Only stream them to roomy screens on a decent connection, and
+  // cap the playlist so a visitor never silently downloads the whole library.
+  const conn = navigator.connection;
+  const constrained = conn?.saveData || /(^|-)2g|3g/.test(conn?.effectiveType || '');
+  const wantVideo = HERO_VIDEOS.length > 0 && !reduce && !constrained && window.matchMedia('(min-width: 768px)').matches;
   const [videoOn, setVideoOn] = useState(false);
 
   return (
@@ -121,7 +126,7 @@ function Hero() {
       {wantVideo && (
         <>
           <motion.div style={{ y: on(skyY) }} className="absolute inset-0 -top-[10%] h-[125%] overflow-hidden bg-ink">
-            <HeroVideo clips={HERO_VIDEOS} onReady={() => setVideoOn(true)} />
+            <HeroVideo clips={HERO_VIDEOS.slice(0, 4)} onReady={() => setVideoOn(true)} />
           </motion.div>
           <div className={`pointer-events-none absolute inset-0 z-[2] transition-opacity duration-[1400ms] ${videoOn ? 'opacity-100' : 'opacity-0'}`} aria-hidden="true">
             <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(5,7,13,.62),rgba(7,12,26,.2)_35%,rgba(7,12,26,.38)_72%,#07090f)]" />
@@ -426,12 +431,15 @@ export default function Home() {
   return (
     <>
       <Hero />
+      <TrustBar />
       <Marquee />
       <Stats />
       <FleetShowcase />
       <div className="hairline" />
       <HowItWorks />
+      <Principles />
       <GlobalReach />
+      <ScrollBand>Fly Private · Fly Imperial · Fly Private ·</ScrollBand>
       <Routes />
       <Enquire />
       <Faq />

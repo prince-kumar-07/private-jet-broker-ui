@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion';
 import Lenis from 'lenis';
 import { useAuth } from '../lib/auth';
 import { useToast } from './Toast';
-import { APP_NAME, APP_SHORT_NAME } from '../config';
+import { APP_NAME, APP_SHORT_NAME, CONTACT_EMAIL, CONTACT_PHONE, COMPANY_LEGAL_NAME, COMPANY_ADDRESS, COMPANY_REG } from '../config';
 import { JetIcon, Spinner } from './ui';
 import { Grain, Preloader, ScrollProgress } from './Effects';
 import ErrorBoundary from './ErrorBoundary';
@@ -26,6 +26,7 @@ export function Layout() {
 
   return (
     <>
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-full focus:bg-gold focus:px-5 focus:py-2 focus:text-sm focus:text-black">Skip to content</a>
       <Preloader />
       <Grain />
       <ScrollProgress />
@@ -33,14 +34,14 @@ export function Layout() {
         key={'curtain' + pathname}
         initial={{ scaleY: first.current ? 0 : 1 }}
         animate={{ scaleY: 0 }}
-        transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
+        transition={{ duration: 0.55, ease: [0.76, 0, 0.24, 1] }}
         className="pointer-events-none fixed inset-0 z-[80] origin-top bg-navy"
       >
         <div className="absolute inset-x-0 bottom-0 h-px bg-gold" />
       </motion.div>
       <Navbar />
-      <motion.main key={pathname} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: first.current ? 0 : 0.25 }} className="min-h-screen">
-        <ErrorBoundary key={pathname}><Outlet /></ErrorBoundary>
+      <motion.main id="main" key={pathname} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: first.current ? 0 : 0.1 }} className="min-h-screen">
+        <ErrorBoundary key={pathname}><Suspense fallback={<div className="grid min-h-[60vh] place-items-center"><Spinner /></div>}><Outlet /></Suspense></ErrorBoundary>
       </motion.main>
       <Footer />
     </>
@@ -137,16 +138,48 @@ function Navbar() {
 }
 
 function Footer() {
+  const col = 'space-y-2.5 text-sm text-white/55';
+  const lnk = 'transition-colors hover:text-gold';
   return (
-    <footer className="border-t border-white/10 bg-navy/60">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-5 py-10 text-sm text-white/50 sm:flex-row sm:px-8">
-        <div className="flex items-center gap-3"><JetIcon className="h-4 w-auto text-gold" /><span className="font-display uppercase tracking-[0.2em] text-white/80">{APP_NAME}</span></div>
-        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-xs">
-          <Link to="/terms" className="hover:text-white">Terms</Link>
-          <Link to="/privacy" className="hover:text-white">Privacy</Link>
-          <Link to="/cancellation-policy" className="hover:text-white">Cancellation Policy</Link>
+    <footer className="relative border-t border-white/10 bg-navy/60">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
+      <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
+        <div>
+          <div className="flex items-center gap-3"><JetIcon className="h-5 w-auto text-gold" /><span className="font-display text-xl uppercase tracking-[0.2em] text-white/90">{APP_NAME}</span></div>
+          <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/50">An aircraft-agnostic private jet and helicopter charter broker. Every flight is operated by a licensed operator.</p>
+        </div>
+        <nav aria-label="Explore">
+          <p className="mb-4 text-[11px] uppercase tracking-[0.3em] text-gold">Explore</p>
+          <ul className={col}>
+            <li><Link to="/fleet" className={lnk}>Fleet</Link></li>
+            <li><Link to="/empty-legs" className={lnk}>Empty Legs</Link></li>
+            <li><Link to="/track" className={lnk}>Track a Flight</Link></li>
+            <li><Link to="/request" className={lnk}>Request a Quote</Link></li>
+          </ul>
         </nav>
-        <p>© {new Date().getFullYear()} {APP_NAME}. Private jet brokerage.</p>
+        <nav aria-label="Legal">
+          <p className="mb-4 text-[11px] uppercase tracking-[0.3em] text-gold">Legal</p>
+          <ul className={col}>
+            <li><Link to="/terms" className={lnk}>Terms of Service</Link></li>
+            <li><Link to="/privacy" className={lnk}>Privacy Policy</Link></li>
+            <li><Link to="/cancellation-policy" className={lnk}>Cancellation Policy</Link></li>
+          </ul>
+        </nav>
+        <div>
+          <p className="mb-4 text-[11px] uppercase tracking-[0.3em] text-gold">Contact</p>
+          <ul className={col}>
+            {CONTACT_PHONE && <li><a href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`} className={lnk}>{CONTACT_PHONE}</a></li>}
+            {CONTACT_EMAIL && <li><a href={`mailto:${CONTACT_EMAIL}`} className={lnk}>{CONTACT_EMAIL}</a></li>}
+            <li><Link to="/contact" className={lnk}>Send us a message</Link></li>
+            <li className="text-white/40">Concierge available 24/7</li>
+          </ul>
+        </div>
+      </div>
+      <div className="border-t border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-6 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <p>© {new Date().getFullYear()} {COMPANY_LEGAL_NAME || APP_NAME}. All rights reserved.{COMPANY_REG && ` ${COMPANY_REG}.`}{COMPANY_ADDRESS && ` ${COMPANY_ADDRESS}.`}</p>
+          <p className="flex items-center gap-2"><svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-gold/70" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 11V8a5 5 0 0110 0v3M5 11h14v10H5V11z" /></svg>Encrypted connection · Payments processed by Razorpay</p>
+        </div>
       </div>
     </footer>
   );

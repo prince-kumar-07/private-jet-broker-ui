@@ -20,4 +20,4 @@ export const markIntroSeen = () => {
   try { sessionStorage.setItem(KEY, '1'); } catch { /* storage unavailable */ }
 };
 // Seconds the hero should wait so its entrance plays after the splash screen.
-export const INTRO_DELAY = introSeen() || (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 0 : 2.4;
+export const INTRO_DELAY = introSeen() || (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 0 : 1.9;

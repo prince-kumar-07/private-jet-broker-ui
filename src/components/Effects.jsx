@@ -10,7 +10,7 @@ export function Preloader() {
   useEffect(() => {
     if (!show) return;
     document.body.style.overflow = 'hidden';
-    const t = setTimeout(() => { setShow(false); markIntroSeen(); document.body.style.overflow = ''; }, 2300);
+    const t = setTimeout(() => { setShow(false); markIntroSeen(); document.body.style.overflow = ''; }, 1800);
     return () => { clearTimeout(t); document.body.style.overflow = ''; };
   }, [show]);
 

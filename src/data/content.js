@@ -38,7 +38,7 @@ export const STEPS = [
 ];
 
 export const FAQ = [
-  { q: 'How fast will I get a quote?', a: 'Most requests are reviewed and quoted within a few hours, around the clock.' },
+  { q: 'How fast will I get a quote?', a: 'Most requests are reviewed and quoted within about two hours, around the clock. Complex international itineraries can take a little longer.' },
   { q: 'Can I change or cancel a request?', a: 'Yes. You can cancel any request from your dashboard until it is confirmed.' },
   { q: 'Do you fly internationally?', a: 'Yes. We arrange charters worldwide, including permits and handling.' },
   { q: 'Can I bring pets or special catering?', a: 'Absolutely. Add them in the request form and we will arrange it.' },
@@ -63,3 +63,26 @@ export const PAYMENT_STATUS = {
   paid: { label: 'Paid', cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30' },
   refunded: { label: 'Refunded', cls: 'bg-sky-500/15 text-sky-300 border-sky-400/30' },
 };
+
+// Trust copy. Every line here restates something the Terms, Privacy Policy or request flow already
+// promises, so the marketing never claims more than the product does. Edit with care.
+export const TRUST_BAR = [
+  { icon: 'shield', label: 'Licensed operators only' },
+  { icon: 'receipt', label: 'Transparent, all-inclusive quotes' },
+  { icon: 'lock', label: 'Encrypted & private' },
+  { icon: 'card', label: 'Secure payments via Razorpay' },
+  { icon: 'clock', label: '24/7 concierge' },
+];
+
+export const PRINCIPLES = [
+  { n: 'I', title: 'Aircraft-agnostic', text: 'We do not own aircraft, so we have no reason to steer you toward one. We source the best-fit cabin and operator for your trip.' },
+  { n: 'II', title: 'Licensed operators', text: 'Your flight is operated by an FAA/DGCA-licensed (or equivalent) operator who is responsible for the safe operation of the aircraft.' },
+  { n: 'III', title: 'Clear pricing', text: 'You receive a written quote before you commit. Extra charges such as permits or overnight crew fees are communicated before they are incurred.' },
+  { n: 'IV', title: 'Private by design', text: 'Encrypted connections, hashed passwords, and passenger details shared only with the operator flying your trip. We never sell your data.' },
+];
+
+export const FLIGHT_PROMISES = [
+  ['No obligation', 'Requesting availability is free. You only pay once you accept a quote.'],
+  ['A person, not a bot', 'Every request is reviewed by a charter specialist who replies by email or phone.'],
+  ['Fair cancellation', 'Unconfirmed requests cancel free at any time. Our refund tiers are published in full.'],
+];

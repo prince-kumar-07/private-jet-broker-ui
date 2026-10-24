@@ -128,6 +128,9 @@ export default function MyRequests() {
                               {paying === r.id ? 'Opening payment...' : `Pay ${fmtMoney(r.quote_amount, r.quote_currency)}`}
                             </button>
                           )}
+                          {['quoted', 'confirmed'].includes(r.status) && r.payment?.status !== 'paid' && (
+                            <p className="mt-2 text-center text-[11px] text-white/45">Secure checkout by Razorpay. Your card details never touch our servers.</p>
+                          )}
                         </div>
                       )}
                       {['submitted', 'under_review', 'quoted'].includes(r.status) && (

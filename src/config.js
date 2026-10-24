@@ -15,3 +15,9 @@ export const HERO_VIDEOS = (import.meta.env.VITE_HERO_VIDEOS || '').split(',').m
 // Optional public contact details shown next to the enquiry form
 export const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL || '';
 export const CONTACT_PHONE = import.meta.env.VITE_CONTACT_PHONE || '';
+
+// Optional company disclosures for the footer (legal name, registered address, registration / licence
+// reference). Only rendered when set, so nothing is invented.
+export const COMPANY_LEGAL_NAME = import.meta.env.VITE_COMPANY_LEGAL_NAME || '';
+export const COMPANY_ADDRESS = import.meta.env.VITE_COMPANY_ADDRESS || '';
+export const COMPANY_REG = import.meta.env.VITE_COMPANY_REG || '';

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { MotionConfig } from 'framer-motion';
 import ColdStart from './components/ColdStart';
@@ -9,14 +9,15 @@ import { Layout, RequireAuth } from './components/Layout';
 import Home from './pages/Home';
 import Fleet from './pages/Fleet';
 import EmptyLegs from './pages/EmptyLegs';
-import TrackFlight from './pages/TrackFlight';
+const TrackFlight = lazy(() => import('./pages/TrackFlight'));
 import { Login, Register, VerifyEmail, ForgotPassword, ResetPassword } from './pages/Auth';
 import NewRequest from './pages/NewRequest';
 import Contact from './pages/Contact';
 import MyRequests from './pages/MyRequests';
 import Account from './pages/Account';
 import { Terms, Privacy, CancellationPolicy } from './pages/Legal';
-import { AdminDashboard, AdminRequest } from './pages/Admin';
+const AdminDashboard = lazy(() => import('./pages/Admin').then((m) => ({ default: m.AdminDashboard })));
+const AdminRequest = lazy(() => import('./pages/Admin').then((m) => ({ default: m.AdminRequest })));
 
 const NotFound = () => (
   <div className="grid min-h-screen place-items-center text-center">
